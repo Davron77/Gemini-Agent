@@ -5,6 +5,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field
 
+from rag import WeaviateRag
+
 class ToolDefinition:
     def __init__(self, name, description, input_schema, function):
         self.name = name
@@ -83,6 +85,31 @@ def edit_file(input_data):
     except Exception as e:
         return "", str(e)
 
+def search_documentation(input_data):
+    input_dict = json.loads(input_data)
+    query = input_dict["query"]
+    top_k = input_dict.get("top_k", 3)
+
+    try:
+        with WeaviateRag() as rag:
+            results = rag.search(query, top_k)
+
+            if not results:
+                return "No relevant documentation found.", None
+            
+            formatted_result = []
+
+            for i, result in enumerate(results):
+                formatted_result.append(
+                    f"Result {i} - {result['filename']}, chunk {result['chunk_id']}\n"
+                    f"{result['content']}"
+                )
+            
+        
+        return "\n ---- \n".join(formatted_result), None
+    
+    except Exception as e:
+        return "", f"Search failed: {e}"
 
 class ReadFileInput(BaseModel):
     path: str = Field(
@@ -104,6 +131,13 @@ class EditFileInput(BaseModel):
     )
     new_str: str = Field(description="Text to replace old_str with.")
 
+class SearchDocumentationInput(BaseModel):
+    query: str = Field(
+        description="The search query describing the information you are looking for"
+    )
+    top_k: Optional[int] = Field(
+        description="Number of relevant documentation chunks to return", default=3
+    )
 
 read_file_definition = ToolDefinition(
     name='read_file',
@@ -127,4 +161,11 @@ edit_file_definition = ToolDefinition(
     """,
     input_schema=EditFileInput.model_json_schema(),
     function=edit_file,
+)
+
+search_documentation_definition = ToolDefinition(
+    name="search_documentation",
+    description="Search through project documentation to find relevant information. Use this tool when you need to answer questions about the project, features, setup, configuration and etc.",
+    input_schema=SearchDocumentationInput.model_json_schema(),
+    function=search_documentation,
 )

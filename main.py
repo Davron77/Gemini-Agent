@@ -7,7 +7,7 @@ from termcolor import colored
 import json
 
 # Import your tool definition
-from tools import read_file_definition, list_files_definition, edit_file_definition
+from tools import read_file_definition, list_files_definition, edit_file_definition, search_documentation_definition
 
 # Load variables from .env into the environment
 load_dotenv()
@@ -25,7 +25,8 @@ class GeminiAgent:
         self.registry = {
             read_file_definition.name: read_file_definition,
             list_files_definition.name: list_files_definition,
-            edit_file_definition.name: edit_file_definition
+            edit_file_definition.name: edit_file_definition,
+            search_documentation_definition.name: search_documentation_definition,
         }
 
         # 2. Build the declarations for the API config
